@@ -155,16 +155,14 @@ function clearLastGame()
 
 function startNighttime()
 {
-  if (!checkValidVisits())
-  {
-    NIGHT_ERROR_CELL.setValue("Invalid visits");
-    return;
-  }
-  NIGHT_ERROR_CELL.setValue("");
-  
+  // Reset visit targets
+  ss.getRange(VISIT_ROW, PLAYER_INDEX_OFFSET, 1, NUM_PLAYERS_CELL.getValue()).setValue("");
+
+  // Highlight appropriate role in order list
   ss.getRange(4, ROLE_ORDER_OFFSET).activate();
   ScriptProperties.setProperty("turn", 0);
   
+  // Update current player cell
   if (ScriptProperties.getProperty(0) != null)
   {
     CURRENT_PLAYER_CELL.setValue(ScriptProperties.getProperty(0));
@@ -173,6 +171,8 @@ function startNighttime()
   {
     CURRENT_PLAYER_CELL.setValue("Narrator");
   }
+
+  // Debug turn index
   ss.getRange(6, 16).setValue(0);
 }
 
@@ -183,23 +183,33 @@ function advanceNight()
   turn++;
   ScriptProperties.setProperty("turn", turn);
 
+  // Update current player cell
   if (ScriptProperties.getProperty(turn) != null)
   {
     CURRENT_PLAYER_CELL.setValue(ScriptProperties.getProperty(turn));
+    ScriptProperties.setProperty(CURRENT_PLAYER_CELL.getValue + "Ability", false);
   }
   else
   {
     CURRENT_PLAYER_CELL.setValue("Narrator");
   }
 
-  // Activate current Role
+  // Highlight current role
   var highlightRow = turn + 4;
   if (turn > 1) highlightRow++;
   if (turn > 3) highlightRow += 4;
   if (turn > 5) highlightRow++;
   ss.getRange(highlightRow, ROLE_ORDER_OFFSET).activate();
 
+  // Debug turn index
   ss.getRange(6, 16).setValue(turn);
+
+  // Reminder to roleblock
+  if (turn == 4)
+  {
+    var ui = SpreadsheetApp.getUI();
+    ui.alert('Roleblock Reminder');
+  }
 
   if (turn >= NUM_ROLES)
   {
@@ -210,12 +220,22 @@ function advanceNight()
 
 function endNighttime()
 {
+  if (!checkValidVisits())
+  {
+    NIGHT_ERROR_CELL.setValue("Invalid visits");
+    return;
+  }
+  NIGHT_ERROR_CELL.setValue("");
 
+  // TODO: Calculate deaths, lookout reading
 }
 
 function activateAbility()
 {
-  
+  var t = "" // TODO: acquire target
+  ScriptProperties.setProperty(CURRENT_PLAYER_CELL.getValue + "Ability", true);
+  ScriptProperties.setProperty(CURRENT_PLAYER_CELL.getValue() + "Target", t)
+  // TODO: Give investigative info
 }
 
 function checkValidVisits()
@@ -254,6 +274,14 @@ function checkValidVisits()
   VISIT_ERROR_CELL.setValue("");
   VISIT_ERROR_CELL.setBackground('#666666');
   return true;
+}
+
+function onOpen()
+{
+  SpreadsheetApp.getUI()
+    .createMenu('Custom Menu')
+    .addItem('Show alert', 'showAlert')
+    .addToUi();
 }
 
 function onEdit(e)
